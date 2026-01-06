@@ -19,8 +19,8 @@
     }
 
     button {
-      padding: 10px 15px;
-      margin: 5px 0;
+      padding: 10px;
+      margin: 6px 0;
       width: 100%;
       font-size: 16px;
       background: #222;
@@ -33,24 +33,29 @@
       background: #333;
     }
 
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
     input {
       width: 100%;
       padding: 10px;
-      margin: 5px 0;
+      margin: 6px 0;
       font-size: 16px;
     }
 
     .stats {
       background: #1b1b1b;
       padding: 10px;
-      margin-bottom: 15px;
       border: 1px solid #333;
+      margin-bottom: 15px;
     }
 
     .log {
       background: #000;
       padding: 10px;
-      height: 200px;
+      height: 220px;
       overflow-y: auto;
       border: 1px solid #333;
       font-size: 14px;
@@ -58,13 +63,16 @@
 
     .warning {
       color: #ff7777;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
 
 <h1>🎰 WIPEOUT 🎰</h1>
-<p style="text-align:center;">A game about why gambling always wins.</p>
+<p style="text-align:center;">
+A game about how gambling systems slowly turn against you.
+</p>
 
 <div class="stats">
   <p>💰 Money: $<span id="money">0</span></p>
@@ -77,6 +85,10 @@
 <button onclick="makeGuess()">Pick Number</button>
 
 <button onclick="takeLoan()">Take $200 Loan from Big Tony</button>
+<button id="repayBtn" onclick="repayLoan()" style="display:none;">
+  Repay Big Tony ($250)
+</button>
+
 <button onclick="stealCollege()">Steal $100 from Child’s College Fund</button>
 <button onclick="quitGame()">Quit</button>
 
@@ -112,6 +124,9 @@
     document.getElementById("college").textContent = collegeFund;
     document.getElementById("debt").textContent = debt;
     document.getElementById("impostersCount").textContent = imposters.size;
+
+    document.getElementById("repayBtn").style.display =
+      debt > 0 && money >= debt ? "block" : "none";
   }
 
   function makeGuess() {
@@ -128,7 +143,7 @@
       money += 50;
       log("✅ Correct! You gained $50.");
 
-      // Add more imposters (system gets worse)
+      // Game gets worse after wins
       while (imposters.size < Math.min(100, imposters.size + 5)) {
         imposters.add(Math.floor(Math.random() * 100) + 1);
       }
@@ -137,18 +152,14 @@
       if (luckyNumbers.has(guess)) {
         money += 100;
         log("🍀 LUCKY NUMBER! +$100 and 5 imposters removed.");
-
-        const imposterArray = Array.from(imposters);
-        imposterArray.splice(0, 5);
-        imposters = new Set(imposterArray);
+        imposters = new Set(Array.from(imposters).slice(5));
       }
     }
 
-    // Auto-repay Big Tony if possible
-    if (debt > 0 && money >= debt) {
-      money -= debt;
-      log("💸 You repaid Big Tony $" + debt + ".");
-      debt = 0;
+    // Big Tony interest
+    if (debt > 0) {
+      money -= 25;
+      log("😈 Big Tony collects $25 in interest.");
     }
 
     if (money < -500) {
@@ -171,28 +182,17 @@
     updateUI();
   }
 
+  function repayLoan() {
+    money -= debt;
+    log("💸 You paid Big Tony $250. You're free.");
+    debt = 0;
+    updateUI();
+  }
+
   function stealCollege() {
     if (collegeFund >= 100) {
       collegeFund -= 100;
       money += 100;
       log("🎓 You stole $100 from your child’s future.");
     } else {
-      log("🎓 Nothing left to steal.");
-    }
-    updateUI();
-  }
-
-  function quitGame() {
-    log("🚪 You walked away. The house was still waiting.");
-    disableGame();
-  }
-
-  function disableGame() {
-    document.querySelectorAll("button").forEach(b => b.disabled = true);
-  }
-
-  updateUI();
-</script>
-
-</body>
-</html>
+      log
