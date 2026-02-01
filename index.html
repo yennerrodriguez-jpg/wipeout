@@ -19,7 +19,7 @@
     }
 
     button {
-      padding: 10px;
+      padding: 12px;
       margin: 6px 0;
       width: 100%;
       font-size: 16px;
@@ -29,21 +29,8 @@
       cursor: pointer;
     }
 
-    button:hover {
-      background: #333;
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 6px 0;
-      font-size: 16px;
-    }
+    button:hover { background: #333; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .stats {
       background: #1b1b1b;
@@ -70,48 +57,30 @@
 <body>
 
 <h1>🎰 WIPEOUT 🎰</h1>
-<p style="text-align:center;">
-A game about how gambling systems slowly turn against you.
-</p>
+<p style="text-align:center;">A game about how gambling slowly eats your life.</p>
 
 <div class="stats">
-  <p>💰 Money: $<span id="money">0</span></p>
-  <p>🎓 Child’s College Fund: $<span id="college">1000</span></p>
-  <p>😈 Debt to Big Tony: $<span id="debt">0</span></p>
-  <p>🕵️ Imposters: <span id="impostersCount">30</span></p>
+  <p>💰 Money: $<span id="money">100</span></p>
+  <p>🎓 Kid’s Savings: $<span id="college">1000</span></p>
+  <p>😈 Debt: $<span id="debt">0</span></p>
+  <p>🎲 Gambles Played: <span id="gambles">0</span></p>
 </div>
 
-<input type="number" id="guess" placeholder="Pick a number (1–100)">
-<button onclick="makeGuess()">Pick Number</button>
-
-<button onclick="takeLoan()">Take $200 Loan from Big Tony</button>
-<button id="repayBtn" onclick="repayLoan()" style="display:none;">
-  Repay Big Tony ($250)
-</button>
-
-<button onclick="stealCollege()">Steal $100 from Child’s College Fund</button>
-<button onclick="quitGame()">Quit</button>
+<button onclick="gamble()">🎲 Gamble ($30)</button>
+<button onclick="takeLoan()">💼 Take $200 Loan</button>
+<button onclick="repayLoan()">💸 Repay Loan</button>
+<button onclick="withdrawCollege()">🎓 Withdraw $100 from Kid’s Savings</button>
+<button onclick="quitGame()">🚪 Quit</button>
 
 <h3>Game Log</h3>
 <div class="log" id="log"></div>
 
 <script>
-  let money = 0;
+  let money = 100;
   let collegeFund = 1000;
   let debt = 0;
-  let loanTaken = false;
-
-  let imposters = new Set();
-  const luckyNumbers = new Set([3, 7, 8, 9, 11, 12]);
-
-  function initImposters(count = 30) {
-    imposters.clear();
-    while (imposters.size < count) {
-      imposters.add(Math.floor(Math.random() * 100) + 1);
-    }
-  }
-
-  initImposters();
+  let gambles = 0;
+  let loans = 0;
 
   function log(msg) {
     const logDiv = document.getElementById("log");
@@ -123,43 +92,30 @@ A game about how gambling systems slowly turn against you.
     document.getElementById("money").textContent = money;
     document.getElementById("college").textContent = collegeFund;
     document.getElementById("debt").textContent = debt;
-    document.getElementById("impostersCount").textContent = imposters.size;
-
-    document.getElementById("repayBtn").style.display =
-      debt > 0 && money >= debt ? "block" : "none";
+    document.getElementById("gambles").textContent = gambles;
   }
 
-  function makeGuess() {
-    const guess = parseInt(document.getElementById("guess").value);
-    if (!guess || guess < 1 || guess > 100) {
-      log("⚠️ Pick a valid number between 1 and 100.");
+  function gamble() {
+    if (money < 30) {
+      log("⚠️ Not enough money to gamble.");
       return;
     }
 
-    if (imposters.has(guess)) {
-      money -= 50;
-      log("💀 IMPOSTER! You lost $50.");
+    money -= 30;
+    gambles++;
+
+    if (Math.random() < 0.5) {
+      money += 60;
+      log("✅ You won $60.");
     } else {
-      money += 50;
-      log("✅ Correct! You gained $50.");
-
-      // Game gets worse after wins
-      while (imposters.size < Math.min(100, imposters.size + 5)) {
-        imposters.add(Math.floor(Math.random() * 100) + 1);
-      }
-
-      // Lucky numbers
-      if (luckyNumbers.has(guess)) {
-        money += 100;
-        log("🍀 LUCKY NUMBER! +$100 and 5 imposters removed.");
-        imposters = new Set(Array.from(imposters).slice(5));
-      }
+      log("💀 You lost $30.");
     }
 
-    // Big Tony interest
-    if (debt > 0) {
-      money -= 25;
-      log("😈 Big Tony collects $25 in interest.");
+    // Loan interest every 10 gambles
+    if (debt > 0 && gambles % 10 === 0) {
+      const interest = loans * 50;
+      debt += interest;
+      log(`😈 Interest added: +$${interest}`);
     }
 
     if (money < -500) {
@@ -171,28 +127,47 @@ A game about how gambling systems slowly turn against you.
   }
 
   function takeLoan() {
-    if (loanTaken) {
-      log("😈 Big Tony says you already owe him.");
-      return;
-    }
     money += 200;
-    debt = 250;
-    loanTaken = true;
-    log("💼 Big Tony gives you $200. You owe $250.");
+    debt += 200;
+    loans++;
+    log("💼 Took a $200 loan.");
     updateUI();
   }
 
   function repayLoan() {
-    money -= debt;
-    log("💸 You paid Big Tony $250. You're free.");
-    debt = 0;
+    if (money >= debt && debt > 0) {
+      money -= debt;
+      log(`💸 Paid off $${debt} in debt.`);
+      debt = 0;
+      loans = 0;
+    } else {
+      log("⚠️ You can't afford to repay the loan.");
+    }
     updateUI();
   }
 
-  function stealCollege() {
+  function withdrawCollege() {
     if (collegeFund >= 100) {
       collegeFund -= 100;
       money += 100;
-      log("🎓 You stole $100 from your child’s future.");
+      log("🎓 Took $100 from your kid’s future.");
     } else {
-      log
+      log("⚠️ No money left in savings.");
+    }
+    updateUI();
+  }
+
+  function quitGame() {
+    log("🚪 You walked away. Probably the smartest move.");
+    disableGame();
+  }
+
+  function disableGame() {
+    document.querySelectorAll("button").forEach(btn => btn.disabled = true);
+  }
+
+  updateUI();
+</script>
+
+</body>
+</html>
